@@ -53,7 +53,7 @@ if __name__ == '__main__':
   # if there are more, we need a little help
   # if there is a .latexmain this also tells us the main file
   print tex_files
-  main_files = [f for f in tex_files if f.endswith('main.text')]
+  main_files = [f for f in tex_files if f.endswith('main.tex')]
   if len(main_files) == 1:
       tex_main_file = main_files[0]
   elif len(tex_files) == 1:
