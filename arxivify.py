@@ -75,6 +75,7 @@ if __name__ == '__main__':
   except Exception,e:
     print e
 
+  print '=== Using main LaTeX file', tex_main_file
 
   # go through the main file, look for included latex and bibtex files
   tex_files = []
@@ -95,16 +96,16 @@ if __name__ == '__main__':
           print e
 
     elif 'bibliography{' in line and not line.strip().startswith('%'):
-      fn = line.split('bibliography{')[1].split('}')[0]
-      fn = os.path.normpath(os.path.join(args.src, fn))
-      if not fn.endswith('.bib'):
-        fn = fn +'.bib'
-      print '\tFound bibtex file', fn
-      try:
-        shutil.copyfile(fn, os.path.join(dst_path, fn.split('/')[-1]))
-      except Exception,e:
-          print e
-
+      fns = line.split('bibliography{')[1].split('}')[0]
+      for fn in fns.split(','):
+          fn = os.path.normpath(os.path.join(args.src, fn))
+          if not fn.endswith('.bib'):
+            fn = fn +'.bib'
+          print '\tFound bibtex file', fn
+          try:
+            shutil.copyfile(fn, os.path.join(dst_path, fn.split('/')[-1]))
+          except Exception,e:
+              print e
 
 
   tex_files.append(tex_main_file)
@@ -178,16 +179,9 @@ if __name__ == '__main__':
   print
   print
 
-  print '=== looking for bibtex files ==='
-  pattern = os.path.join(args.src, '*.bbl')
-  bibtex_files = glob.glob(pattern)
-  for fn in bibtex_files:
-    print '\t Found',fn
-    shutil.copy(fn, dst_path)
 
 
-  print
-  print
+
 
   # go through the main file again and change the input paths to the dst dir
   main = file(os.path.join(dst_path, tex_main_file.split('/')[-1]),'r')
@@ -200,10 +194,14 @@ if __name__ == '__main__':
       l = '\input{'+fn+'}\n'
       main_copy.write(l)
     elif 'bibliography{' in line:
-      fn = line.split('bibliography{')[1].split('}')[0]
-      fn = fn.split('/')[-1]
-      print fn
-      l = '\\bibliography{'+fn+'}\n'
+      fns = line.split('bibliography{')[1].split('}')[0]
+      bibs = [x.split('/')[-1] for x in line.split('bibliography{')[1].split('}')[0].split(',')]
+    #   for fn in fns.split(','):
+    #       fn = fn.split('/')[-1]
+    #       bibs += fn
+    #       print fn
+      print bibs
+      l = '\\bibliography{'+','.join(bibs)+'}\n'
       main_copy.write(l)
     else:
       main_copy.write(line)
@@ -222,5 +220,37 @@ if __name__ == '__main__':
   print '=== Creating archive arxiv.zip ==='
   cmd = 'cd %s; zip -r %s/%s * ; cd %s' % (dst_path, cwd, args.zip, cwd)
   # cmd = 'cd ' + dst_path + '; zip -r ' + args.zip + ' * ; cd '
+  print cmd
+  os.system(cmd)
+
+
+  print
+  print
+
+  # compile and bibtex the project
+  print '=== attempting to compile and bibtex LaTeX sources ==='
+  try:
+     fn = tex_main_file.split('/')[-1].split('.')[0]
+     cmd = 'cd %s;' % dst_path
+     cmd += 'pdflatex --interaction nonstopmode %s;' % fn
+     cmd += 'bibtex %s' % fn
+     os.system(cmd)
+  except:
+     print '!!! Error generating .bbl file. Literature references will not work on arxiv. Please provide .bbl file manually.'
+
+  print '=== looking for bibtex files ==='
+  pattern = os.path.join(args.src, '*.bbl')
+  bibtex_files = glob.glob(pattern)
+  for fn in bibtex_files:
+    print '\t Found',fn
+    shutil.copy(fn, dst_path)
+
+  # add the resulting .bbl file to the zip archive
+  print
+  print
+  print '=== Updating arxiv.zip ==='
+  cwd = os.getcwd()
+  fn = tex_main_file.split('/')[-1].split('.')[0]
+  cmd = 'cd %s; zip -u %s/%s %s' % (dst_path, cwd, args.zip, fn+'.bbl')
   print cmd
   os.system(cmd)
