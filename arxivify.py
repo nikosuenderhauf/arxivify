@@ -86,7 +86,7 @@ if __name__ == '__main__':
       fn = line.split('\input{')[1].split('}')[0]
       fn = os.path.normpath(os.path.join(args.src, fn))
       print '\tFound input file', fn
-      if not fn.endswith('.tex'):
+      if not fn.endswith('.tex') and not fn.endswith('.tikz'):
         fn=fn+'.tex'
       tex_files.append(fn)
 
@@ -139,7 +139,7 @@ if __name__ == '__main__':
 
         # copy it
         try:
-          shutil.copyfile(os.path.join(args.src, figure_prefix, figure), os.path.join(dst_path,   figure_prefix, figure))
+          shutil.copyfile(os.path.join(args.src, figure_prefix, figure), os.path.join(dst_path, figure))
         except Exception,e:
           print e
 
